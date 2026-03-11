@@ -1,0 +1,14 @@
+[package]
+name = "matrix_reactive_wallpaper"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+smithay-client-toolkit = { version = "0.19", features = ["calloop"] }
+wayland-client = "0.31"
+wayland-egl = "0.32"
+wayland-backend = "0.3"
+khronos-egl = { version = "6", features = ["dynamic"] }
+gl = "0.14"
+calloop = "0.13"
+
