@@ -124,6 +124,9 @@ impl Renderer {
         egl.make_current(display, Some(surface), Some(surface), Some(context))
             .expect("Failed to make EGL context current");
 
+        egl.swap_interval(display, 0)
+            .expect("Failed to set swap interval");
+
         gl::load_with(|s| {
             egl.get_proc_address(s)
                 .map_or(std::ptr::null(), |f| f as *const _)

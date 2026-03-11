@@ -31,6 +31,7 @@ struct Surface {
     wl_surface: wl_surface::WlSurface,
     renderer: Option<egl::Renderer>,
     configured: bool,
+    frame_pending: bool,
 }
 
 struct App {
@@ -38,6 +39,7 @@ struct App {
     compositor: CompositorState,
     layer_shell: LayerShell,
     _output: OutputState,
+    qh: QueueHandle<Self>,
 
     surfaces: Vec<Surface>,
     stats: stats::Stats,
@@ -71,6 +73,7 @@ impl App {
             wl_surface,
             renderer: None,
             configured: false,
+            frame_pending: false,
         });
     }
 }
@@ -88,6 +91,7 @@ fn main() {
         compositor,
         layer_shell,
         _output: OutputState::new(&globals, &qh),
+        qh: qh.clone(),
         surfaces: Vec::new(),
         stats: stats::Stats::new(),
         running: true,
@@ -115,10 +119,14 @@ fn main() {
             let mem = app.stats.mem;
             let temp = app.stats.temp;
 
+            let qh = app.qh.clone();
             for surface in &mut app.surfaces {
                 if surface.configured
+                    && surface.frame_pending
                     && let Some(renderer) = &mut surface.renderer
                 {
+                    surface.frame_pending = false;
+                    surface.wl_surface.frame(&qh, surface.wl_surface.clone());
                     renderer.render(cores, mem, temp);
                 }
             }
@@ -157,9 +165,12 @@ impl CompositorHandler for App {
         &mut self,
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
-        _surface: &wl_surface::WlSurface,
+        surface: &wl_surface::WlSurface,
         _time: u32,
     ) {
+        if let Some(s) = self.surfaces.iter_mut().find(|s| s.wl_surface == *surface) {
+            s.frame_pending = true;
+        }
     }
 
     fn surface_enter(
@@ -252,6 +263,7 @@ impl LayerShellHandler for App {
         }
 
         surface.configured = true;
+        surface.frame_pending = true;
     }
 }
 
