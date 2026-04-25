@@ -202,7 +202,9 @@ impl Renderer {
         let mut buf = [0.0f32; 64];
         buf[..num_cores].copy_from_slice(&self.phases);
 
-        let t = self.start.elapsed().as_secs_f32();
+        // Wrap to keep the shader's hash(sin(...)) argument within the
+        // precision range where GLES sin() still produces distinct values.
+        let t = self.start.elapsed().as_secs_f32() % 1024.0;
 
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 0.0);
